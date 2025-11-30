@@ -92,8 +92,14 @@ function Admin() {
       await Api.deleteProduct(id);
       const p = await Api.products();
       setProducts(p);
+      alert('Producto eliminado exitosamente');
     } catch (err) {
-      alert('Error al eliminar producto: ' + (err.response?.data?.message || err.message));
+      console.error('Error al eliminar producto:', err);
+      if (err.response?.status === 403 || err.response?.status === 400) {
+        alert('No se puede eliminar el producto porque está asociado a carritos, pedidos o cotizaciones existentes.');
+      } else {
+        alert('Error al eliminar producto: ' + (err.response?.data?.message || err.message));
+      }
     }
   };
 
@@ -103,8 +109,13 @@ function Admin() {
       await Api.deleteBrand(id);
       const b = await Api.brands();
       setBrands(b);
+      alert('Marca eliminada exitosamente');
     } catch (err) {
-      alert('Error al eliminar marca: ' + (err.response?.data?.message || err.message));
+      if (err.response?.status === 400) {
+        alert('No se puede eliminar la marca porque tiene productos asociados. Primero elimine o reasigne los productos.');
+      } else {
+        alert('Error al eliminar marca: ' + (err.response?.data?.message || err.message));
+      }
     }
   };
 
@@ -114,8 +125,13 @@ function Admin() {
       await Api.deleteCategory(id);
       const c = await Api.categories();
       setCategories(c);
+      alert('Categoría eliminada exitosamente');
     } catch (err) {
-      alert('Error al eliminar categoría: ' + (err.response?.data?.message || err.message));
+      if (err.response?.status === 400) {
+        alert('No se puede eliminar la categoría porque tiene productos asociados. Primero elimine o reasigne los productos.');
+      } else {
+        alert('Error al eliminar categoría: ' + (err.response?.data?.message || err.message));
+      }
     }
   };
 
@@ -559,6 +575,7 @@ function Admin() {
                     <label htmlFor="userRol" className="form-label">Rol</label>
                     <select id="userRol" className="form-select">
                       <option value="usuario">Usuario</option>
+                      <option value="vendedor">Vendedor</option>
                       <option value="admin">Administrador</option>
                     </select>
                   </div>
@@ -603,6 +620,7 @@ function Admin() {
                   const marcaErr = form.querySelector('#productMarcaError');
                   const precioErr = form.querySelector('#productPrecioError');
                   const stockErr = form.querySelector('#productStockError');
+                  const imagenErr = form.querySelector('#productImagenError');
                   const success = form.parentElement.querySelector('#productAdminSuccess');
                   if (success) success.style.display = 'none';
                   let ok = true;
@@ -614,6 +632,8 @@ function Admin() {
                   if (Number.isNaN(precioVal) || precioVal <= 0) { setFieldError(precio, precioErr, 'Ingrese un precio válido (> 0)'); ok = false; } else { setFieldError(precio, precioErr, ''); }
                   const stockVal = Number(stock.value);
                   if (Number.isNaN(stockVal) || stockVal < 0) { setFieldError(stock, stockErr, 'Ingrese stock válido (>= 0)'); ok = false; } else { setFieldError(stock, stockErr, ''); }
+                  // Validar imagen obligatoria solo al crear nuevo producto
+                  if (!editandoProducto && !imagen.files[0]) { setFieldError(imagen, imagenErr, 'Debe seleccionar una imagen para el producto'); ok = false; } else { setFieldError(imagen, imagenErr, ''); }
                   if (!ok) return;
                   
                   try {
@@ -695,8 +715,9 @@ function Admin() {
                     <div id="productStockError" className="error-message text-danger small" style={{display:'none'}} />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="productImagen" className="form-label">Imagen {editandoProducto && <small className="text-muted">(opcional - dejar vacío para mantener actual)</small>}</label>
+                    <label htmlFor="productImagen" className="form-label">Imagen {editandoProducto ? <small className="text-muted">(opcional - dejar vacío para mantener actual)</small> : '*'}</label>
                     <input id="productImagen" type="file" className="form-control" accept="image/*" />
+                    <div id="productImagenError" className="error-message text-danger small" style={{display:'none'}} />
                     <small className="text-muted">Formatos: JPG, PNG, GIF, WEBP, AVIF (máx 5MB)</small>
                   </div>
                 </form>
@@ -782,6 +803,7 @@ function Admin() {
                   const nombre = form.querySelector('#marcaNombre');
                   const imagen = form.querySelector('#marcaImagen');
                   const nombreErr = form.querySelector('#marcaNombreError');
+                  const imagenErr = form.querySelector('#marcaImagenError');
                   const success = form.parentElement.querySelector('#marcaSuccess');
                   if (success) success.style.display = 'none';
                   
@@ -790,6 +812,14 @@ function Admin() {
                     return;
                   } else {
                     setFieldError(nombre, nombreErr, '');
+                  }
+                  
+                  // Validar imagen obligatoria solo al crear nueva marca
+                  if (!editandoMarca && !imagen.files[0]) {
+                    setFieldError(imagen, imagenErr, 'Debe seleccionar una imagen para la marca');
+                    return;
+                  } else {
+                    setFieldError(imagen, imagenErr, '');
                   }
                   
                   try {
@@ -823,8 +853,9 @@ function Admin() {
                     <div id="marcaNombreError" className="error-message text-danger small" style={{display:'none'}} />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="marcaImagen" className="form-label">Imagen {editandoMarca && <small className="text-muted">(opcional - dejar vacío para mantener actual)</small>}</label>
+                    <label htmlFor="marcaImagen" className="form-label">Imagen {editandoMarca ? <small className="text-muted">(opcional - dejar vacío para mantener actual)</small> : '*'}</label>
                     <input id="marcaImagen" type="file" className="form-control" accept="image/*" />
+                    <div id="marcaImagenError" className="error-message text-danger small" style={{display:'none'}} />
                     <small className="text-muted">Formatos: JPG, PNG, GIF, WEBP, AVIF (máx 5MB)</small>
                   </div>
                 </form>
