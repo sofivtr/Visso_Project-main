@@ -65,6 +65,9 @@ function Header() {
                     {(user.rol === 'admin' || user.rol === 'ADMIN') && (
                       <li><Link className="dropdown-item" to="/admin"><i className="bi bi-gear" /> Panel Admin</Link></li>
                     )}
+                    {(user.rol === 'vendedor' || user.rol === 'VENDEDOR') && (
+                      <li><Link className="dropdown-item" to="/vendedor"><i className="bi bi-person-badge" /> Panel Vendedor</Link></li>
+                    )}
                     <li><Link className="dropdown-item" to="/productos"><i className="bi bi-shop" /> Tienda</Link></li>
                     <li><hr className="dropdown-divider" /></li>
                     <li>
