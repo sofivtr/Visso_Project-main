@@ -29,7 +29,12 @@ function Auth() {
               const password = document.getElementById('password').value;
               try {
                 console.log('Intentando login con:', email);
-                const usuario = await Api.login({ email, password });
+                const resp = await Api.login({ email, password });
+                const usuario = resp?.usuario || resp;
+                const token = resp?.token;
+                if (token) {
+                  localStorage.setItem('token', token);
+                }
                 console.log('Login exitoso:', usuario);
                 setCurrentUser(usuario);
                 // Redirigir según rol
@@ -112,7 +117,12 @@ function Auth() {
                 };
                 const usuarioCreado = await Api.register(nuevoUsuario);
                 // Hacer login automático después del registro exitoso
-                const usuario = await Api.login({ email: email.value.trim(), password: pass.value });
+                const resp = await Api.login({ email: email.value.trim(), password: pass.value });
+                const usuario = resp?.usuario || resp;
+                const token = resp?.token;
+                if (token) {
+                  localStorage.setItem('token', token);
+                }
                 setCurrentUser(usuario);
                 form.reset();
                 navigate('/');

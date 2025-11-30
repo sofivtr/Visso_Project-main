@@ -15,6 +15,7 @@ export function isLoggedIn() {
 
 export function logout() {
   localStorage.removeItem(KEY);
+  localStorage.removeItem('token');
   try {
     localStorage.removeItem('carrito');
     window.dispatchEvent(new CustomEvent('cart:updated', { detail: { count: 0 } }));
