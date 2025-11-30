@@ -1,19 +1,62 @@
-import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
-import Admin from '../components/Admin.jsx';
-import { Api } from '../assets/js/api';
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+import Admin from "../components/Admin.jsx";
+import { Api } from "../assets/js/api";
 
-// Mock API to avoid real network calls
-vi.mock('../assets/js/api', () => ({
+// Mock API acorde al backend + JWT
+vi.mock("../assets/js/api", () => ({
   Api: {
     users: vi.fn(async () => [
-      { id: 1, nombre: 'Juan', email: 'juan@example.com', rol: 'user' },
-      { id: 2, nombre: 'Ana', email: 'ana@example.com', rol: 'admin' },
+      {
+        id: 1,
+        nombre: "Juan",
+        apellido: "Pérez",
+        email: "juan@example.com",
+        rol: "usuario",
+        activo: true,
+      },
+      {
+        id: 2,
+        nombre: "Ana",
+        apellido: "López",
+        email: "ana@example.com",
+        rol: "admin",
+        activo: true,
+      },
     ]),
     products: vi.fn(async () => [
-      { id: 1, nombre: 'Producto', categoria: 'marcos', precio: 10000 },
+      {
+        id: 1,
+        codigoProducto: "P001",
+        nombre: "Producto",
+        descripcion: "Desc",
+        precio: 10000,
+        stock: 5,
+        categoria: { id: 10, nombre: "Óptica" },
+        marca: { id: 20, nombre: "Ray-Ban" },
+      },
     ]),
+    categories: vi.fn(async () => [
+      { id: 10, nombre: "Óptica" },
+      { id: 11, nombre: "Sol" },
+    ]),
+    brands: vi.fn(async () => [
+      { id: 20, nombre: "Ray-Ban" },
+      { id: 21, nombre: "Oakley" },
+    ]),
+    getPedidos: vi.fn(async () => []),
+    createUser: vi.fn(async () => ({ id: 3 })),
+    updateUser: vi.fn(async () => ({})),
+    createProduct: vi.fn(async () => ({ id: 2 })),
+    updateProduct: vi.fn(async () => ({})),
+    createBrand: vi.fn(async () => ({ id: 22 })),
+    updateBrand: vi.fn(async () => ({})),
+    createCategory: vi.fn(async () => ({ id: 12 })),
+    updateCategory: vi.fn(async () => ({})),
+    deleteProduct: vi.fn(async () => {}),
+    deleteBrand: vi.fn(async () => {}),
+    deleteCategory: vi.fn(async () => {}),
   },
 }));
 
@@ -27,110 +70,144 @@ function renderAdmin() {
 
 function createDeferred() {
   let resolve;
-  const promise = new Promise(r => { resolve = r; });
+  const promise = new Promise((r) => {
+    resolve = r;
+  });
   return { promise, resolve };
 }
 
-describe('Admin - Usuario modal', () => {
-  test('muestra errores con datos inválidos en Usuario', async () => {
+describe("Admin - Usuario modal", () => {
+  test("muestra errores con datos inválidos en Usuario", async () => {
     const user = userEvent.setup();
     const { container } = renderAdmin();
 
-    await user.click(screen.getByRole('button', { name: /agregar usuario/i }));
+    await user.click(screen.getByRole("button", { name: /agregar usuario/i }));
 
-    const userModal = container.querySelector('#userModal');
-    const submitUserBtn = container.querySelector('button[form="userAdminForm"]');
+    const userModal = container.querySelector("#userModal");
+    const submitUserBtn = container.querySelector(
+      'button[form="userAdminForm"]'
+    );
     await user.click(submitUserBtn);
 
     expect(within(userModal).getByText(/ingrese el nombre/i)).toBeVisible();
     expect(within(userModal).getByText(/rut inválido/i)).toBeVisible();
     expect(within(userModal).getByText(/correo inválido/i)).toBeVisible();
-    expect(within(userModal).getByText(/formato: 9 1234 5678/i)).toBeVisible();
     expect(within(userModal).getByText(/mínimo 8 caracteres/i)).toBeVisible();
   });
 
-  test('valida y formatea correctamente con datos válidos en Usuario', async () => {
+  test("valida y formatea correctamente con datos válidos en Usuario", async () => {
     const user = userEvent.setup();
     const { container } = renderAdmin();
 
-    await user.click(screen.getByRole('button', { name: /agregar usuario/i }));
+    await user.click(screen.getByRole("button", { name: /agregar usuario/i }));
 
-    const userModal = container.querySelector('#userModal');
-    const nombreInput = userModal.querySelector('#userNombre');
-    const rutInput = userModal.querySelector('#userRut');
-    const emailInput = userModal.querySelector('#userEmail');
-    const telInput = userModal.querySelector('#userTelefono');
-    const passInput = userModal.querySelector('#userPassword');
+    const userModal = container.querySelector("#userModal");
+    const nombreInput = userModal.querySelector("#userNombre");
+    const apellidoInput = userModal.querySelector("#userApellido");
+    const rutInput = userModal.querySelector("#userRut");
+    const emailInput = userModal.querySelector("#userEmail");
+    const passInput = userModal.querySelector("#userPassword");
 
-    await user.type(nombreInput, 'Laura');
-    await user.type(rutInput, '12345678-5');
-    await user.type(emailInput, 'laura@example.com');
-    await user.type(telInput, '912345678');
-    await user.type(passInput, '12345678');
+    await user.type(nombreInput, "Laura");
+    await user.type(apellidoInput, "Gómez");
+    await user.type(rutInput, "12345678-5");
+    await user.type(emailInput, "laura@example.com");
+    await user.type(passInput, "12345678");
 
-    const submitUserBtn = container.querySelector('button[form="userAdminForm"]');
+    const submitUserBtn = container.querySelector(
+      'button[form="userAdminForm"]'
+    );
     await user.click(submitUserBtn);
 
-    expect(within(userModal).getByText(/usuario guardado con éxito/i)).toBeVisible();
-    expect(rutInput.value).toBe('12.345.678-5');
-    expect(telInput.value).toBe('9 1234 5678');
+    expect(
+      within(userModal).getByText(/usuario guardado con éxito/i)
+    ).toBeVisible();
+    expect(Api.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ rut: "12.345.678-5" })
+    );
   });
 });
 
-describe('Admin - Producto modal', () => {
-  test('muestra errores con datos inválidos en Producto', async () => {
+describe("Admin - Producto modal", () => {
+  test("muestra errores con datos inválidos en Producto", async () => {
     const user = userEvent.setup();
     const { container } = renderAdmin();
 
-    // Cambiar al tab de productos antes de buscar el botón
-    await user.click(screen.getByRole('button', { name: /gestión de productos/i }));
-    await user.click(screen.getByRole('button', { name: /agregar producto/i }));
+    // Cambiar al tab de productos
+    await user.click(screen.getByRole("button", { name: /^Productos$/i }));
+    await user.click(screen.getByRole("button", { name: /agregar producto/i }));
 
-    const productModal = container.querySelector('#productModal');
-    const submitProductBtn = container.querySelector('button[form="productAdminForm"]');
+    // Esperar modal y hacer submit inmediatamente
+    const productModal = container.querySelector("#productModal");
+    const submitProductBtn = container.querySelector(
+      'button[form="productAdminForm"]'
+    );
     await user.click(submitProductBtn);
 
-    expect(within(productModal).getByText(/ingrese el nombre/i)).toBeVisible();
-    expect(within(productModal).getByText(/ingrese la categoría/i)).toBeVisible();
-    expect(within(productModal).getByText(/ingrese un precio válido/i)).toBeVisible();
+    const nombreError = await within(productModal).findByText(
+      /ingrese el nombre/i
+    );
+    expect(nombreError).toBeVisible();
+    const categoriaError = await within(productModal).findByText(
+      /seleccione una categoría/i
+    );
+    expect(categoriaError).toBeVisible();
+    const precioError = await within(productModal).findByText(
+      /ingrese un precio válido \(> 0\)/i
+    );
+    expect(precioError).toBeVisible();
   });
 
-  test('valida correctamente con datos válidos en Producto', async () => {
+  test("valida correctamente con datos válidos en Producto", async () => {
     const user = userEvent.setup();
     const { container } = renderAdmin();
 
-    // Cambiar al tab de productos antes de buscar el botón
-    await user.click(screen.getByRole('button', { name: /gestión de productos/i }));
-    await user.click(screen.getByRole('button', { name: /agregar producto/i }));
+    // Cambiar al tab de productos
+    await user.click(screen.getByRole("button", { name: /^Productos$/i }));
+    await user.click(screen.getByRole("button", { name: /agregar producto/i }));
 
-    const productModal = container.querySelector('#productModal');
-    const nombreInput = productModal.querySelector('#productNombre');
-    const categoriaInput = productModal.querySelector('#productCategoria');
-    const precioInput = productModal.querySelector('#productPrecio');
+    const productModal = container.querySelector("#productModal");
+    const nombreInput = productModal.querySelector("#productNombre");
+    const categoriaInput = productModal.querySelector("#productCategoria");
+    const precioInput = productModal.querySelector("#productPrecio");
+    const codigoInput = productModal.querySelector("#productCodigo");
+    const marcaInput = productModal.querySelector("#productMarca");
+    const imagenInput = productModal.querySelector("#productImagen");
 
-    await user.type(nombreInput, 'Montura');
-    await user.type(categoriaInput, 'marcos');
-    await user.type(precioInput, '15000');
+    await user.type(codigoInput, "P002");
+    await user.type(nombreInput, "Montura");
+    await user.selectOptions(categoriaInput, "10");
+    await user.selectOptions(marcaInput, "20");
+    await user.type(precioInput, "15000");
+    const file = new File(["(imagen)"], "foto.png", { type: "image/png" });
+    await user.upload(imagenInput, file);
 
-    const submitProductBtn = container.querySelector('button[form="productAdminForm"]');
+    const submitProductBtn = container.querySelector(
+      'button[form="productAdminForm"]'
+    );
     await user.click(submitProductBtn);
 
-    expect(within(productModal).getByText(/producto guardado con éxito/i)).toBeVisible();
+    const successMsg = await within(productModal).findByText(
+      /producto guardado con éxito/i
+    );
+    expect(successMsg).toBeVisible();
   });
 });
 
-describe('Admin - Tabs y estados', () => {
+describe("Admin - Tabs y estados", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  test('muestra Cargando en ambos tabs hasta resolver', async () => {
+  test("muestra Cargando en ambos tabs hasta resolver", async () => {
     const user = userEvent.setup();
 
     const usersDef = createDeferred();
     const productsDef = createDeferred();
     Api.users.mockImplementation(() => usersDef.promise);
     Api.products.mockImplementation(() => productsDef.promise);
+    Api.categories.mockResolvedValueOnce([]);
+    Api.brands.mockResolvedValueOnce([]);
 
     renderAdmin();
 
@@ -138,30 +215,36 @@ describe('Admin - Tabs y estados', () => {
     expect(screen.getByText(/cargando/i)).toBeInTheDocument();
 
     // Cambiar al tab de productos y aún debe mostrar cargando
-    await user.click(screen.getByRole('button', { name: /gestión de productos/i }));
+    await user.click(screen.getByRole("button", { name: /^Productos$/i }));
     expect(screen.getByText(/cargando/i)).toBeInTheDocument();
 
     // Resolver ambas promesas
-    usersDef.resolve([{ id: 1, nombre: 'Juan', email: 'juan@example.com', rol: 'user' }]);
-    productsDef.resolve([{ id: 10, nombre: 'Producto', categoria: 'marcos', precio: 10000 }]);
+    usersDef.resolve([
+      { id: 1, nombre: "Juan", email: "juan@example.com", rol: "user" },
+    ]);
+    productsDef.resolve([
+      { id: 10, nombre: "Producto", categoria: "marcos", precio: 10000 },
+    ]);
 
     // Verificar contador en usuarios
-    await user.click(screen.getByRole('button', { name: /gestión de usuarios/i }));
+    await user.click(screen.getByRole("button", { name: /^Usuarios$/i }));
     const usuariosText = screen.getByText(/total de usuarios/i);
     const usuariosCount = usuariosText.previousElementSibling;
-    expect(usuariosCount).toHaveTextContent('1');
+    expect(usuariosCount).toHaveTextContent("1");
 
     // Verificar contador en productos
-    await user.click(screen.getByRole('button', { name: /gestión de productos/i }));
+    await user.click(screen.getByRole("button", { name: /^Productos$/i }));
     const productosText = screen.getByText(/total de productos/i);
     const productosCount = productosText.previousElementSibling;
-    expect(productosCount).toHaveTextContent('1');
+    expect(productosCount).toHaveTextContent("1");
   });
 
-  test('muestra estados vacíos Sin usuarios y Sin productos', async () => {
+  test("muestra estados vacíos Sin usuarios y Sin productos", async () => {
     const user = userEvent.setup();
     Api.users.mockResolvedValueOnce([]);
     Api.products.mockResolvedValueOnce([]);
+    Api.categories.mockResolvedValueOnce([]);
+    Api.brands.mockResolvedValueOnce([]);
 
     renderAdmin();
 
@@ -169,13 +252,13 @@ describe('Admin - Tabs y estados', () => {
     await screen.findByText(/sin usuarios/i);
     const usuariosText = screen.getByText(/total de usuarios/i);
     const usuariosCount = usuariosText.previousElementSibling;
-    expect(usuariosCount).toHaveTextContent('0');
+    expect(usuariosCount).toHaveTextContent("0");
 
     // Productos vacío
-    await user.click(screen.getByRole('button', { name: /gestión de productos/i }));
+    await user.click(screen.getByRole("button", { name: /^Productos$/i }));
     await screen.findByText(/sin productos/i);
     const productosText = screen.getByText(/total de productos/i);
     const productosCount = productosText.previousElementSibling;
-    expect(productosCount).toHaveTextContent('0');
+    expect(productosCount).toHaveTextContent("0");
   });
 });

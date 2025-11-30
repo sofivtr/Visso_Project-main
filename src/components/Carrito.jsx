@@ -480,39 +480,39 @@ function Carrito() {
               <form id="checkoutForm">
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label">Nombre Completo *</label>
+                    <label className="form-label" htmlFor="checkoutNombre">Nombre Completo *</label>
                     <input type="text" className="form-control" id="checkoutNombre" required />
                     <div id="checkoutNombreError" className="text-danger small" style={{ display: 'none' }}></div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">RUT *</label>
+                    <label className="form-label" htmlFor="checkoutRut">RUT *</label>
                     <input type="text" className="form-control" id="checkoutRut" placeholder="12.345.678-9" required />
                     <div id="checkoutRutError" className="text-danger small" style={{ display: 'none' }}></div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">Email *</label>
+                    <label className="form-label" htmlFor="checkoutEmail">Email *</label>
                     <input type="email" className="form-control" id="checkoutEmail" required />
                     <div id="checkoutEmailError" className="text-danger small" style={{ display: 'none' }}></div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">Teléfono *</label>
+                    <label className="form-label" htmlFor="checkoutTelefono">Teléfono *</label>
                     <input type="tel" className="form-control" id="checkoutTelefono" placeholder="9 1234 5678" required />
                     <div id="checkoutTelefonoError" className="text-danger small" style={{ display: 'none' }}></div>
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Dirección *</label>
+                    <label className="form-label" htmlFor="checkoutDireccion">Dirección *</label>
                     <input type="text" className="form-control" id="checkoutDireccion" required />
                     <div id="checkoutDireccionError" className="text-danger small" style={{ display: 'none' }}></div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">Región *</label>
+                    <label className="form-label" htmlFor="checkoutRegion">Región *</label>
                     <select className="form-select" id="checkoutRegion" required>
                       <option value="">Seleccionar región</option>
                     </select>
                     <div id="checkoutRegionError" className="text-danger small" style={{ display: 'none' }}></div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">Comuna *</label>
+                    <label className="form-label" htmlFor="checkoutComuna">Comuna *</label>
                     <select className="form-select" id="checkoutComuna" required>
                       <option value="">Seleccionar comuna</option>
                     </select>

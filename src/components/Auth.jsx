@@ -116,7 +116,6 @@ function Auth() {
                 setCurrentUser(usuario);
                 form.reset();
                 navigate('/');
-                window.location.reload();
               } catch (err) {
                 const errorMsg = err.response?.data || 'Error al registrar usuario';
                 // Mostrar error en el campo correcto
@@ -130,6 +129,7 @@ function Auth() {
                   setFieldError(email, emailError, errorMsg);
                 }
               }
+              try { window.location.reload(); } catch {}
             }}>
               <div className="mb-3">
                 <label htmlFor="newNombre" className="form-label">Nombre</label>

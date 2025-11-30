@@ -28,17 +28,16 @@ beforeEach(() => {
   })
 
   // Reset mocks y localStorage
-  mockUsers.mockReset()
+  mockLogin.mockReset()
   mockNavigate.mockReset()
   localStorage.clear()
 })
 
-// Mock de Api.users()
-const mockUsers = vi.fn()
+// Mock de Api.login()
+const mockLogin = vi.fn()
 vi.mock('../assets/js/api', () => ({
   Api: {
-    users: () => mockUsers(),
-    products: vi.fn(),
+    login: (...args) => mockLogin(...args),
   }
 }))
 
@@ -65,21 +64,21 @@ async function submitLogin(email, password) {
 
 describe('Auth - Login', () => {
   it('muestra error si el usuario no existe', async () => {
-    mockUsers.mockResolvedValueOnce([])
+    mockLogin.mockRejectedValueOnce({ response: { data: 'Usuario no encontrado' } })
     await submitLogin('no@ex.com', '12345678')
     expect(await screen.findByText(/usuario no encontrado/i)).toBeInTheDocument()
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it('muestra error si la contraseña es incorrecta', async () => {
-    mockUsers.mockResolvedValueOnce([{ email: 'test@ex.com', contrasena: 'secret', rol: 'user' }])
+    mockLogin.mockRejectedValueOnce({ response: { data: 'Contraseña incorrecta' } })
     await submitLogin('test@ex.com', 'wrong')
     expect(await screen.findByText(/contraseña incorrecta/i)).toBeInTheDocument()
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
   it('con credenciales válidas de usuario, navega a /', async () => {
-    mockUsers.mockResolvedValueOnce([{ email: 'user@ex.com', contrasena: 'pass', rol: 'user' }])
+    mockLogin.mockResolvedValueOnce({ id: 1, email: 'user@ex.com', rol: 'usuario' })
     await submitLogin('user@ex.com', 'pass')
     expect(mockNavigate).toHaveBeenCalledWith('/')
     const saved = JSON.parse(localStorage.getItem('visso_current_user'))
@@ -87,7 +86,7 @@ describe('Auth - Login', () => {
   })
 
   it('con credenciales válidas de admin, navega a /admin', async () => {
-    mockUsers.mockResolvedValueOnce([{ email: 'admin@ex.com', contrasena: 'adminpass', rol: 'admin' }])
+    mockLogin.mockResolvedValueOnce({ id: 2, email: 'admin@ex.com', rol: 'admin' })
     await submitLogin('admin@ex.com', 'adminpass')
     expect(mockNavigate).toHaveBeenCalledWith('/admin')
   })
