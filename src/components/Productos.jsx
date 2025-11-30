@@ -33,8 +33,10 @@ function calcularPrecioCotizacion(precioBase, cotizacionData) {
 function Productos() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('todos');
+  const [brand, setBrand] = useState('todos');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [qty, setQty] = useState(1);
@@ -52,24 +54,27 @@ function Productos() {
     filtroAzul: false,
   });
 
-  // Cargar productos y categorías desde el backend
+  // Cargar productos, categorías y marcas desde el backend
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [productsData, categoriesData] = await Promise.all([
+        const [productsData, categoriesData, brandsData] = await Promise.all([
           Api.products(),
           Api.categories(),
+          Api.brands(),
         ]);
         if (mounted) {
           setProducts(Array.isArray(productsData) ? productsData : []);
           setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+          setBrands(Array.isArray(brandsData) ? brandsData : []);
         }
       } catch (e) {
         console.error(e);
         if (mounted) {
           setProducts([]);
           setCategories([]);
+          setBrands([]);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -85,12 +90,16 @@ function Productos() {
       const matchCategory = category === 'todos' || 
         (p.categoria && p.categoria.nombre === category);
       
+      // Filtrar por marca (comparar con marca.nombre del backend)
+      const matchBrand = brand === 'todos' || 
+        (p.marca && p.marca.nombre === brand);
+      
       // Filtrar por búsqueda
       const matchSearch = !term || (p.nombre || '').toLowerCase().includes(term);
       
-      return matchCategory && matchSearch;
+      return matchCategory && matchBrand && matchSearch;
     });
-  }, [products, category, search]);
+  }, [products, category, brand, search]);
 
   const openModal = (p) => {
     setSelected(p);
@@ -113,7 +122,11 @@ function Productos() {
     });
   };
   
-  const changeQuantity = (d) => setQty(prev => Math.max(1, Math.min(10, prev + d)));
+  const changeQuantity = (d) => {
+    if (!selected) return;
+    const maxStock = selected.stock || 0;
+    setQty(prev => Math.max(1, Math.min(maxStock, prev + d)));
+  };
   
   const addToCartFromModal = async () => {
     if (!selected) return;
@@ -121,6 +134,17 @@ function Productos() {
     const usuario = getCurrentUser();
     if (!usuario || !usuario.id) {
       alert('Debe iniciar sesión para agregar productos al carrito');
+      return;
+    }
+
+    // Validar stock antes de agregar al carrito
+    if (selected.stock === 0) {
+      alert('No hay stock disponible de este producto');
+      return;
+    }
+    
+    if (qty > selected.stock) {
+      alert(`Solo hay ${selected.stock} unidad(es) disponible(s) de este producto`);
       return;
     }
 
@@ -182,7 +206,12 @@ function Productos() {
       
     } catch (error) {
       console.error('Error al agregar al carrito:', error);
-      alert('Error al agregar el producto al carrito');
+      const mensaje = error.response?.data?.message || error.message;
+      if (error.response?.status === 400 && (mensaje.toLowerCase().includes('stock') || mensaje.toLowerCase().includes('disponible'))) {
+        alert(mensaje);
+      } else {
+        alert('Error al agregar el producto al carrito: ' + mensaje);
+      }
     }
   };
 
@@ -204,7 +233,7 @@ function Productos() {
       <div className="container">
         <div className="filters-section">
           <div className="row align-items-center">
-            <div className="col-md-6 mb-3">
+            <div className="col-md-4 mb-3">
               <h5 className="mb-3">Filtrar por categoría:</h5>
               <button
                 className={`filter-btn btn btn-outline-dark me-2 mb-2 ${category === 'todos' ? 'active' : ''}`}
@@ -224,7 +253,22 @@ function Productos() {
                 </button>
               ))}
             </div>
-            <div className="col-md-6 mb-3">
+            <div className="col-md-4 mb-3">
+              <h5 className="mb-3">Filtrar por marca:</h5>
+              <select 
+                className="form-select" 
+                value={brand} 
+                onChange={(e) => setBrand(e.target.value)}
+              >
+                <option value="todos">Todas las marcas</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.nombre}>
+                    {b.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-4 mb-3">
               <h5 className="mb-3">Buscar producto:</h5>
               <input
                 type="text"
@@ -291,22 +335,37 @@ function Productos() {
                   </div>
                 </div>
                 <div className="col-md-8">
-                  <span className="badge bg-light text-dark" id="modalCategory">{selected ? (selected.categoria?.nombre || 'Sin categoría') : ''}</span>
+                  <div className="mb-2">
+                    <span className="badge bg-light text-dark me-2" id="modalCategory">{selected ? (selected.categoria?.nombre || 'Sin categoría') : ''}</span>
+                    <span className="badge bg-primary" id="modalBrand">{selected ? (selected.marca?.nombre || 'Sin marca') : ''}</span>
+                  </div>
                   <h3 className="mt-3 mb-3" id="modalProductTitle">{selected ? selected.nombre : ''}</h3>
                   <p className="text-muted mb-3" id="modalDescription">{selected ? selected.descripcion : ''}</p>
-                  <div className="d-flex align-items-center mb-4">
+                  <div className="d-flex align-items-center mb-2">
                     <h4 className="product-price mb-0" id="modalPrice">{selected ? formatCLP(selected.precio) : ''}</h4>
+                  </div>
+                  <div className="mb-3">
+                    {selected && selected.stock === 0 && (
+                      <span className="badge bg-danger">Sin stock disponible</span>
+                    )}
+                    {selected && selected.stock > 0 && selected.stock <= 5 && (
+                      <span className="badge bg-warning text-dark">Solo quedan {selected.stock} unidad(es)</span>
+                    )}
+                    {selected && selected.stock > 5 && (
+                      <span className="badge bg-success">Stock disponible: {selected.stock}</span>
+                    )}
                   </div>
                   
                   {!showCotizacion && (
                     <div className="d-flex align-items-center gap-3">
                       <div className="d-flex align-items-center gap-2">
-                        <button className="btn btn-outline-secondary btn-sm" onClick={() => changeQuantity(-1)}><i className="bi bi-dash" /></button>
+                        <button className="btn btn-outline-secondary btn-sm" onClick={() => changeQuantity(-1)} disabled={!selected || selected.stock === 0}><i className="bi bi-dash" /></button>
                         <span className="fw-semibold px-3">{qty}</span>
-                        <button className="btn btn-outline-secondary btn-sm" onClick={() => changeQuantity(1)}><i className="bi bi-plus" /></button>
+                        <button className="btn btn-outline-secondary btn-sm" onClick={() => changeQuantity(1)} disabled={!selected || selected.stock === 0}><i className="bi bi-plus" /></button>
                       </div>
-                      <button className="btn btn-primary flex-grow-1" onClick={addToCartFromModal}>
-                        <i className="bi bi-cart-plus me-2" />Agregar al Carrito
+                      <button className="btn btn-primary flex-grow-1" onClick={addToCartFromModal} disabled={!selected || selected.stock === 0}>
+                        <i className="bi bi-cart-plus me-2" />
+                        {selected && selected.stock === 0 ? 'Sin stock' : 'Agregar al Carrito'}
                       </button>
                     </div>
                   )}
@@ -462,14 +521,24 @@ function Productos() {
                         </div>
                       </div>
                       
+                      <div className="mb-3">
+                        {selected && selected.stock === 0 && (
+                          <div className="alert alert-danger mb-0">Sin stock disponible</div>
+                        )}
+                        {selected && selected.stock > 0 && selected.stock <= 5 && (
+                          <div className="alert alert-warning mb-0">Solo quedan {selected.stock} unidad(es)</div>
+                        )}
+                      </div>
+                      
                       <div className="d-flex align-items-center gap-3 mt-3">
                         <div className="d-flex align-items-center gap-2">
-                          <button className="btn btn-outline-secondary btn-sm" onClick={() => changeQuantity(-1)}><i className="bi bi-dash" /></button>
+                          <button className="btn btn-outline-secondary btn-sm" onClick={() => changeQuantity(-1)} disabled={!selected || selected.stock === 0}><i className="bi bi-dash" /></button>
                           <span className="fw-semibold px-3">{qty}</span>
-                          <button className="btn btn-outline-secondary btn-sm" onClick={() => changeQuantity(1)}><i className="bi bi-plus" /></button>
+                          <button className="btn btn-outline-secondary btn-sm" onClick={() => changeQuantity(1)} disabled={!selected || selected.stock === 0}><i className="bi bi-plus" /></button>
                         </div>
-                        <button className="btn btn-primary flex-grow-1" onClick={addToCartFromModal}>
-                          <i className="bi bi-cart-plus me-2" />Agregar Cotización al Carrito
+                        <button className="btn btn-primary flex-grow-1" onClick={addToCartFromModal} disabled={!selected || selected.stock === 0}>
+                          <i className="bi bi-cart-plus me-2" />
+                          {selected && selected.stock === 0 ? 'Sin stock' : 'Agregar Cotización al Carrito'}
                         </button>
                       </div>
                     </div>

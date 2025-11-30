@@ -178,7 +178,15 @@ function Carrito() {
       window.dispatchEvent(new Event('storage'));
     } catch (error) {
       console.error('Error al actualizar cantidad:', error);
-      alert('Error al actualizar la cantidad');
+      const mensaje = error.response?.data?.message || error.message;
+      if (error.response?.status === 400 && (mensaje.toLowerCase().includes('stock') || mensaje.toLowerCase().includes('disponible'))) {
+        alert(mensaje);
+        // Recargar carrito para mostrar cantidad correcta
+        const nuevoCarrito = await Api.getCarrito(usuario.id);
+        setCarrito(nuevoCarrito);
+      } else {
+        alert('Error al actualizar la cantidad: ' + mensaje);
+      }
     }
   };
 
@@ -263,7 +271,15 @@ function Carrito() {
       navigate('/resultado?estado=ok');
     } catch (error) {
       console.error('Error al finalizar compra:', error);
-      alert('Error al procesar la compra');
+      const mensaje = error.response?.data?.message || error.message;
+      if (error.response?.status === 400 && (mensaje.toLowerCase().includes('stock') || mensaje.toLowerCase().includes('disponible'))) {
+        alert(mensaje);
+        // Recargar carrito para actualizar cantidades disponibles
+        const nuevoCarrito = await Api.getCarrito(usuario.id);
+        setCarrito(nuevoCarrito);
+      } else {
+        alert('Error al procesar la compra: ' + mensaje);
+      }
     }
   };
 

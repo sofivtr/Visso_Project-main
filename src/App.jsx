@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import Carrito from './components/Carrito';
 import Auth from './components/Auth';
 import Admin from './components/Admin';
+import Vendedor from './components/Vendedor';
 import ResultadoCompra from './components/ResultadoCompra';
 import { getCurrentUser } from './assets/js/session';
 //import React from 'react';
@@ -34,6 +35,12 @@ function App() {
           if (!u) return <Auth />; 
           if (u.rol !== 'admin' && u.rol !== 'ADMIN') return <Home />; 
           return <Admin />;
+        })()} />
+        <Route path='/vendedor' element={(() => {
+          const u = getCurrentUser();
+          if (!u) return <Auth />; 
+          if (u.rol !== 'vendedor' && u.rol !== 'VENDEDOR') return <Home />; 
+          return <Vendedor />;
         })()} />
       </Routes>
       <Footer/>
