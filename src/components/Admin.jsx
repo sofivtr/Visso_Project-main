@@ -3,6 +3,7 @@ import { Api } from '../assets/js/api';
 import { validarRut, validarEmail, setFieldError, formatearRut } from '../assets/js/validaciones';
 
 function Admin() {
+  const BASE_URL = ''; 
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -289,7 +290,7 @@ function Admin() {
                           <td>{p.id}</td>
                           <td>
                             {p.imagenUrl ? (
-                              <img src={`http://localhost:8081${p.imagenUrl}`} alt={p.nombre} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} />
+                              <img src={`${BASE_URL}${p.imagenUrl}`} alt={p.nombre} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} />
                             ) : (
                               <span className="text-muted">Sin imagen</span>
                             )}
@@ -406,7 +407,7 @@ function Admin() {
                           <td>{marca.id}</td>
                           <td>
                             {marca.imagen ? (
-                              <img src={`http://localhost:8081${marca.imagen}`} alt={marca.nombre} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} />
+                              <img src={`${BASE_URL}${marca.imagen}`} alt={marca.nombre} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} />
                             ) : (
                               <span className="text-muted">Sin imagen</span>
                             )}

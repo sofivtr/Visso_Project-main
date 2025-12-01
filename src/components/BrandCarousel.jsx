@@ -6,8 +6,8 @@ const BrandCarousel = () => {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Asegúrate de que este puerto coincida con tu backend
-  const BASE_URL = 'http://localhost:8081';
+  // CORRECCIÓN: Dejar vacío para que use el dominio actual (la IP del servidor)
+  const BASE_URL = ''; 
 
   useEffect(() => {
     const fetchBrands = async () => {

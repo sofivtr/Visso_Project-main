@@ -36,7 +36,8 @@ function Vendedor() {
   const getImageUrl = (imagenUrl) => {
     if (!imagenUrl) return '/placeholder.png';
     if (imagenUrl.startsWith('http')) return imagenUrl;
-    return `http://localhost:8081${imagenUrl}`;
+    const BASE_URL = '';
+    return `${BASE_URL}${imagenUrl}`;
   };
 
   return (
