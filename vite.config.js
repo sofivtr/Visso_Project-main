@@ -8,7 +8,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/', // Desarrollo local. Para GitHub Pages cambiar a '/Visso_Project/'
+  base: '/Visso_Project-main/', // GitHub Pages necesita el nombre del repositorio
   plugins: [react()],
   // Si quieres usar el plugin, descomenta la línea de abajo y agrégalo:
   // plugins: [react(), ghPages()],
