@@ -624,7 +624,9 @@ function Admin() {
                   const success = form.parentElement.querySelector('#productAdminSuccess');
                   if (success) success.style.display = 'none';
                   let ok = true;
-                  if (!codigo.value.trim()) { setFieldError(codigo, codigoErr, 'Ingrese el código'); ok = false; } else { setFieldError(codigo, codigoErr, ''); }
+                  if (!codigo.value.trim()) { setFieldError(codigo, codigoErr, 'Ingrese el código'); ok = false; } 
+                  else if (codigo.value.trim().length > 10) { setFieldError(codigo, codigoErr, 'El código no debe superar los 10 caracteres'); ok = false; } 
+                  else { setFieldError(codigo, codigoErr, ''); }
                   if (!nombre.value.trim()) { setFieldError(nombre, nombreErr, 'Ingrese el nombre'); ok = false; } else { setFieldError(nombre, nombreErr, ''); }
                   if (!categoriaId.value) { setFieldError(categoriaId, categoriaErr, 'Seleccione una categoría'); ok = false; } else { setFieldError(categoriaId, categoriaErr, ''); }
                   if (!marcaId.value) { setFieldError(marcaId, marcaErr, 'Seleccione una marca'); ok = false; } else { setFieldError(marcaId, marcaErr, ''); }
@@ -671,8 +673,8 @@ function Admin() {
                   }
                 }}>
                   <div className="mb-3">
-                    <label htmlFor="productCodigo" className="form-label">Código</label>
-                    <input id="productCodigo" className="form-control" placeholder="ej: PROD001" />
+                    <label htmlFor="productCodigo" className="form-label">Código (máx. 10 caracteres)</label>
+                    <input id="productCodigo" className="form-control" placeholder="ej: PROD001" maxLength="10" />
                     <div id="productCodigoError" className="error-message text-danger small" style={{display:'none'}} />
                   </div>
                   <div className="mb-3">
