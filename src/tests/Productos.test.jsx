@@ -21,6 +21,7 @@ vi.mock("../assets/js/api", () => ({
   },
 }));
 import { Api } from "../assets/js/api";
+import { MemoryRouter } from "react-router-dom";
 import Productos from "../components/Productos";
 
 function createDeferred() {
@@ -83,13 +84,21 @@ describe("Productos - Render, filtros, modal y carrito", () => {
     Api.brands.mockResolvedValue(demoBrands);
   });
 
+  function renderProductos(initialSearch = "") {
+    return render(
+      <MemoryRouter initialEntries={[`/productos${initialSearch}`]}>
+        <Productos />
+      </MemoryRouter>
+    );
+  }
+
   it('muestra estado de "Cargando" y luego la lista de productos', async () => {
     const def = createDeferred();
     Api.products.mockReturnValueOnce(def.promise);
     Api.categories.mockResolvedValueOnce(demoCategories);
     Api.brands.mockResolvedValueOnce(demoBrands);
 
-    render(<Productos />);
+    renderProductos();
 
     // Estado de carga inicial
     expect(screen.getByText(/cargando productos/i)).toBeInTheDocument();
@@ -105,7 +114,7 @@ describe("Productos - Render, filtros, modal y carrito", () => {
   });
 
   it("filtra por categoría usando los botones de filtro", async () => {
-    render(<Productos />);
+    renderProductos();
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: /ver/i }).length).toBe(3);
     });
@@ -127,7 +136,7 @@ describe("Productos - Render, filtros, modal y carrito", () => {
   });
 
   it("filtra por búsqueda en el nombre", async () => {
-    render(<Productos />);
+    renderProductos();
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: /ver/i }).length).toBe(3);
     });
@@ -144,7 +153,7 @@ describe("Productos - Render, filtros, modal y carrito", () => {
   });
 
   it("abre el modal, muestra detalles y agrega al carrito con cantidad", async () => {
-    render(<Productos />);
+    renderProductos();
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: /ver/i }).length).toBe(3);
     });

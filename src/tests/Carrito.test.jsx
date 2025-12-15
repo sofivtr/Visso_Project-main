@@ -105,24 +105,17 @@ describe("Carrito.jsx", () => {
       })
     ).toBeInTheDocument();
 
-    expect(
-      within(modal).getByLabelText(/nombre completo/i, {
-        selector: "input",
-        hidden: true,
-      })
-    ).toBeInTheDocument();
+    // Inputs del formulario presentes (seleccionados por atributos actuales)
+    const nombreInput = modal.querySelector('input[name="nombreContacto"]');
+    const emailInput = modal.querySelector('input[name="email"]');
+    const telefonoInput = modal.querySelector('input[name="telefono"]');
+    expect(nombreInput).toBeTruthy();
+    expect(emailInput).toBeTruthy();
+    expect(telefonoInput).toBeTruthy();
 
-    const email = modal.querySelector("#checkoutEmail");
-    const telefono = modal.querySelector("#checkoutTelefono");
-    expect(email).toBeTruthy();
-    expect(telefono).toBeTruthy();
-
-    // Resumen de la compra presente en el lateral con Totales
-    const resumenHeading = await screen.findByText(/resumen de la compra/i);
-    const resumenCard = resumenHeading.closest(".card");
-    expect(resumenCard).toBeTruthy();
-    const resumenWithin = within(resumenCard);
-    expect(resumenWithin.getByText(/^Subtotal:$/i)).toBeInTheDocument();
-    expect(resumenWithin.getByText(/^Total:$/i)).toBeInTheDocument();
+    // Resumen de totales dentro del modal
+    const modalWithin = within(modal);
+    expect(modalWithin.getByText(/^Subtotal:$/i)).toBeInTheDocument();
+    expect(modalWithin.getByText(/^Total:$/i)).toBeInTheDocument();
   });
 });

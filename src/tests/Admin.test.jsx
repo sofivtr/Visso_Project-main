@@ -46,6 +46,9 @@ vi.mock("../assets/js/api", () => ({
       { id: 21, nombre: "Oakley" },
     ]),
     getPedidos: vi.fn(async () => []),
+    getMensajes: vi.fn(async () => []),
+    cambiarEstadoMensaje: vi.fn(async () => ({ ok: true })),
+    marcarComoEnviado: vi.fn(async () => ({ ok: true })),
     createUser: vi.fn(async () => ({ id: 3 })),
     updateUser: vi.fn(async () => ({})),
     createProduct: vi.fn(async () => ({ id: 2 })),
@@ -81,6 +84,7 @@ describe("Admin - Usuario modal", () => {
     const user = userEvent.setup();
     const { container } = renderAdmin();
 
+    await user.click(screen.getByRole("button", { name: /^Usuarios$/i }));
     await user.click(screen.getByRole("button", { name: /agregar usuario/i }));
 
     const userModal = container.querySelector("#userModal");
@@ -99,6 +103,7 @@ describe("Admin - Usuario modal", () => {
     const user = userEvent.setup();
     const { container } = renderAdmin();
 
+    await user.click(screen.getByRole("button", { name: /^Usuarios$/i }));
     await user.click(screen.getByRole("button", { name: /agregar usuario/i }));
 
     const userModal = container.querySelector("#userModal");
@@ -153,7 +158,7 @@ describe("Admin - Producto modal", () => {
     );
     expect(categoriaError).toBeVisible();
     const precioError = await within(productModal).findByText(
-      /ingrese un precio válido \(> 0\)/i
+      /ingrese el precio/i
     );
     expect(precioError).toBeVisible();
   });
@@ -211,7 +216,8 @@ describe("Admin - Tabs y estados", () => {
 
     renderAdmin();
 
-    // Por defecto está el tab de usuarios
+    // Ir al tab de usuarios
+    await user.click(screen.getByRole("button", { name: /^Usuarios$/i }));
     expect(screen.getByText(/cargando/i)).toBeInTheDocument();
 
     // Cambiar al tab de productos y aún debe mostrar cargando
@@ -248,7 +254,8 @@ describe("Admin - Tabs y estados", () => {
 
     renderAdmin();
 
-    // Usuarios vacío
+    // Usuarios vacío (navegar al tab primero)
+    await user.click(screen.getByRole("button", { name: /^Usuarios$/i }));
     await screen.findByText(/sin usuarios/i);
     const usuariosText = screen.getByText(/total de usuarios/i);
     const usuariosCount = usuariosText.previousElementSibling;
