@@ -28,15 +28,20 @@ function Admin() {
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
 
   const abrirModalUsuario = (usuario = null) => {
+    // PROTECCIÓN: Bloquear edición de otro admin
+    if (usuario && usuario.rol === 'admin') {
+      alert('Seguridad: No tienes permisos para editar los datos de otro Administrador.');
+      return;
+    }
+
     setEditandoUsuario(usuario);
     if (usuario) {
-      // Pequeño delay para que el modal se abra antes de llenar los campos
       setTimeout(() => {
         const rutInput = document.getElementById('userRut');
         document.getElementById('userNombre').value = usuario.nombre || '';
         document.getElementById('userApellido').value = usuario.apellido || '';
         rutInput.value = usuario.rut || '';
-        rutInput.disabled = true; // No se puede cambiar el RUT
+        rutInput.disabled = true; 
         document.getElementById('userEmail').value = usuario.email || '';
         document.getElementById('userRol').value = usuario.rol || 'usuario';
         document.getElementById('userPassword').value = '';
@@ -55,7 +60,7 @@ function Admin() {
       setTimeout(() => {
         const codigoInput = document.getElementById('productCodigo');
         codigoInput.value = producto.codigoProducto || '';
-        codigoInput.disabled = true; // No se puede cambiar el código
+        codigoInput.disabled = true; 
         document.getElementById('productNombre').value = producto.nombre || '';
         document.getElementById('productDescripcion').value = producto.descripcion || '';
         document.getElementById('productCategoria').value = producto.categoria?.id || '';
@@ -102,6 +107,12 @@ function Admin() {
   };
 
   const eliminarUsuario = async (id) => {
+    const usuarioAEliminar = users.find(u => u.id === id);
+    if (usuarioAEliminar && usuarioAEliminar.rol === 'admin') {
+      alert('Error: No se puede eliminar a un usuario con rol Administrador.');
+      return;
+    }
+
     if (!confirm('¿Eliminar este usuario?')) return;
     try {
       await Api.deleteUser(id);
@@ -127,8 +138,9 @@ function Admin() {
       alert('Producto eliminado exitosamente');
     } catch (err) {
       console.error('Error al eliminar producto:', err);
+      // === MEJORA EN MENSAJE DE ERROR ===
       if (err.response?.status === 403 || err.response?.status === 400) {
-        alert('No se puede eliminar el producto porque está asociado a pedidos existentes.');
+        alert('NO SE PUEDE ELIMINAR: Este producto forma parte del historial de ventas (pedidos o carritos). Para que no aparezca en la tienda, simplemente déjelo con Stock 0.');
       } else {
         alert('Error al eliminar producto: ' + (err.response?.data?.message || err.message));
       }
@@ -207,7 +219,6 @@ function Admin() {
     if (!confirm('¿Confirmar despacho de este pedido?')) return;
     try {
       await Api.marcarComoEnviado(carritoId);
-      // Actualizar lista localmente
       setPedidos(prev => prev.map(p => 
         p.id === carritoId ? { ...p, estado: 'E' } : p
       ));
@@ -243,11 +254,9 @@ function Admin() {
     if (!confirm('¿Marcar este mensaje como respondido?')) return;
     try {
       await Api.cambiarEstadoMensaje(mensajeId, 'RESPONDIDO');
-      // Actualizar lista localmente
       setMensajes(prev => prev.map(m => 
         m.id === mensajeId ? { ...m, estado: 'RESPONDIDO' } : m
       ));
-      // Cerrar modal usando el botón de cerrar
       document.querySelector('#mensajeDetalleModal .btn-close')?.click();
       alert('Mensaje marcado como respondido');
     } catch (error) {
@@ -278,14 +287,14 @@ function Admin() {
     return <span className={`badge ${badgeClass}`}>{asunto}</span>;
   };
 
-  // Calcular métricas del Dashboard
+  // Métricas
   const calcularIngresosTotales = () => {
     return pedidos
       .filter(p => p.estado === 'P' || p.estado === 'E')
       .reduce((sum, p) => {
         const subtotal = p.total || 0;
         const envio = subtotal > 50000 ? 0 : 3000;
-        const ingresoReal = subtotal + envio; // Sin IVA, ya que va al Estado
+        const ingresoReal = subtotal + envio; 
         return sum + ingresoReal;
       }, 0);
   };
@@ -323,16 +332,12 @@ function Admin() {
   };
 
   const obtenerTopProductos = () => {
-    // Contar ventas por producto desde los pedidos
     const ventasPorProducto = {};
-    
     pedidos.forEach(pedido => {
-      // Incluir tanto pedidos pendientes como enviados
       if ((pedido.estado === 'P' || pedido.estado === 'E') && pedido.detalles) {
         pedido.detalles.forEach(detalle => {
           const productoId = detalle.producto?.id;
           const nombreProducto = detalle.producto?.nombre || 'Desconocido';
-          
           if (productoId) {
             if (!ventasPorProducto[productoId]) {
               ventasPorProducto[productoId] = {
@@ -347,21 +352,15 @@ function Admin() {
         });
       }
     });
-    
-    // Convertir a array y ordenar por cantidad vendida
-    return Object.values(ventasPorProducto)
-      .sort((a, b) => b.cantidad - a.cantidad)
-      .slice(0, 5); // Top 5
+    return Object.values(ventasPorProducto).sort((a, b) => b.cantidad - a.cantidad).slice(0, 5);
   };
 
   const obtenerVentasPorMarca = () => {
     const ventasPorMarca = {};
-    
     pedidos.forEach(pedido => {
       if ((pedido.estado === 'P' || pedido.estado === 'E') && pedido.detalles) {
         pedido.detalles.forEach(detalle => {
           const marca = detalle.producto?.marca?.nombre || 'Sin marca';
-          
           if (!ventasPorMarca[marca]) {
             ventasPorMarca[marca] = {
               nombre: marca,
@@ -372,7 +371,6 @@ function Admin() {
         });
       }
     });
-    
     return Object.values(ventasPorMarca).sort((a, b) => b.value - a.value);
   };
 
@@ -417,8 +415,6 @@ function Admin() {
           {seccion === 'dashboard' && (
             <>
               <h2 className="gestion-title mb-4">Dashboard de Métricas</h2>
-              
-              {/* KPIs Cards */}
               <div className="row g-3 mb-4">
                 <div className="col-sm-6 col-md-3">
                   <div className="card border-0 text-white" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
@@ -455,7 +451,6 @@ function Admin() {
                 </div>
               </div>
 
-              {/* Gráficos */}
               <div className="row g-4">
                 <div className="col-12">
                   <div className="card border-0" style={{boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
@@ -466,25 +461,14 @@ function Admin() {
                           <BarChart data={obtenerStockPorCategoria()} layout="vertical" margin={{ left: 10, right: isMobile ? 10 : 30 }}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis type="number" domain={[0, 'auto']} />
-                            <YAxis 
-                              type="category" 
-                              dataKey="nombre" 
-                              width={isMobile ? 80 : 130}
-                              style={{ fontSize: isMobile ? '10px' : '13px' }}
-                            />
+                            <YAxis type="category" dataKey="nombre" width={isMobile ? 80 : 130} style={{ fontSize: isMobile ? '10px' : '13px' }}/>
                             <Tooltip formatter={(value) => [`${value.toLocaleString('es-CL')} unidades`, 'Stock']}/>
                             <Bar dataKey="stock" fill="#8884d8" name="Stock Total" barSize={isMobile ? 25 : 40}>
-                              {obtenerStockPorCategoria().map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
+                              {obtenerStockPorCategoria().map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
-                      ) : (
-                        <div className="text-center py-5 text-muted">
-                          {loading ? 'Cargando...' : 'No hay datos disponibles'}
-                        </div>
-                      )}
+                      ) : (<div className="text-center py-5 text-muted">{loading ? 'Cargando...' : 'No hay datos disponibles'}</div>)}
                     </div>
                   </div>
                 </div>
@@ -495,35 +479,17 @@ function Admin() {
                       {!loading && obtenerEstadoPedidos().some(e => e.value > 0) ? (
                         <ResponsiveContainer width="100%" height={isMobile ? 280 : 350}>
                           <PieChart>
-                            <Pie
-                              data={obtenerEstadoPedidos()}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={!isMobile}
-                              label={isMobile ? false : ({ nombre, value, percent }) => `${nombre}: ${value} (${(percent * 100).toFixed(0)}%)`}
-                              outerRadius={isMobile ? 80 : 120}
-                              fill="#8884d8"
-                              dataKey="value"
-                              nameKey="nombre"
-                            >
-                              {obtenerEstadoPedidos().map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                              ))}
+                            <Pie data={obtenerEstadoPedidos()} cx="50%" cy="50%" labelLine={!isMobile} label={isMobile ? false : ({ nombre, value, percent }) => `${nombre}: ${value} (${(percent * 100).toFixed(0)}%)`} outerRadius={isMobile ? 80 : 120} fill="#8884d8" dataKey="value" nameKey="nombre">
+                              {obtenerEstadoPedidos().map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />))}
                             </Pie>
                             <Tooltip formatter={(value, name) => [`${value} pedidos`, name]}/>
                             {isMobile && <Legend verticalAlign="bottom" height={36} />}
                           </PieChart>
                         </ResponsiveContainer>
-                      ) : (
-                        <div className="text-center py-5 text-muted">
-                          {loading ? 'Cargando...' : 'No hay pedidos cerrados'}
-                        </div>
-                      )}
+                      ) : (<div className="text-center py-5 text-muted">{loading ? 'Cargando...' : 'No hay pedidos cerrados'}</div>)}
                     </div>
                   </div>
                 </div>
-                
-                {/* Nuevos gráficos */}
                 <div className="col-12">
                   <div className="card border-0" style={{boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
                     <div className="card-body">
@@ -533,31 +499,14 @@ function Admin() {
                           <BarChart data={obtenerTopProductos()} layout="vertical" margin={{ left: 10, right: isMobile ? 10 : 30 }}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis type="number" domain={[0, 'auto']} />
-                            <YAxis 
-                              type="category" 
-                              dataKey="nombre" 
-                              width={isMobile ? 100 : 180}
-                              style={{ fontSize: isMobile ? '10px' : '13px' }}
-                            />
-                            <Tooltip 
-                              formatter={(value, name) => {
-                                if (name === 'cantidad') return [`${value} unidades`, 'Vendidas'];
-                                if (name === 'ingresos') return [formatCLP(value), 'Ingresos'];
-                                return value;
-                              }}
-                            />
+                            <YAxis type="category" dataKey="nombre" width={isMobile ? 100 : 180} style={{ fontSize: isMobile ? '10px' : '13px' }}/>
+                            <Tooltip formatter={(value, name) => { if (name === 'cantidad') return [`${value} unidades`, 'Vendidas']; if (name === 'ingresos') return [formatCLP(value), 'Ingresos']; return value; }}/>
                             <Bar dataKey="cantidad" fill="#667eea" name="cantidad" barSize={isMobile ? 20 : 30}>
-                              {obtenerTopProductos().map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
+                              {obtenerTopProductos().map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
-                      ) : (
-                        <div className="text-center py-5 text-muted">
-                          {loading ? 'Cargando...' : 'No hay productos vendidos'}
-                        </div>
-                      )}
+                      ) : (<div className="text-center py-5 text-muted">{loading ? 'Cargando...' : 'No hay productos vendidos'}</div>)}
                     </div>
                   </div>
                 </div>
@@ -571,25 +520,14 @@ function Admin() {
                           <BarChart data={obtenerVentasPorMarca()} layout="vertical" margin={{ left: 10, right: isMobile ? 10 : 30 }}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis type="number" domain={[0, 'auto']} />
-                            <YAxis 
-                              type="category" 
-                              dataKey="nombre" 
-                              width={isMobile ? 100 : 150}
-                              style={{ fontSize: isMobile ? '10px' : '13px' }}
-                            />
+                            <YAxis type="category" dataKey="nombre" width={isMobile ? 100 : 150} style={{ fontSize: isMobile ? '10px' : '13px' }}/>
                             <Tooltip formatter={(value) => [formatCLP(value), 'Ventas']}/>
                             <Bar dataKey="value" fill="#667eea" name="Ventas" barSize={isMobile ? 25 : 35}>
-                              {obtenerVentasPorMarca().map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={BRAND_COLORS[index % BRAND_COLORS.length]} />
-                              ))}
+                              {obtenerVentasPorMarca().map((entry, index) => (<Cell key={`cell-${index}`} fill={BRAND_COLORS[index % BRAND_COLORS.length]} />))}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
-                      ) : (
-                        <div className="text-center py-5 text-muted">
-                          {loading ? 'Cargando...' : 'No hay ventas por marca'}
-                        </div>
-                      )}
+                      ) : (<div className="text-center py-5 text-muted">{loading ? 'Cargando...' : 'No hay ventas por marca'}</div>)}
                     </div>
                   </div>
                 </div>
@@ -646,7 +584,26 @@ function Admin() {
                           <td><span className="badge bg-light text-dark text-capitalize">{u.rol}</span></td>
                           <td>{u.activo ? <span className="badge bg-success">Sí</span> : <span className="badge bg-danger">No</span>}</td>
                           <td className="text-nowrap">
-                            <button className="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#userModal" onClick={() => abrirModalUsuario(u)}><i className="bi bi-pencil-square" /></button>
+                            {/* === BOTÓN DE EDITAR CONDICIONAL === */}
+                            {u.rol === 'admin' ? (
+                              <button 
+                                className="btn btn-sm btn-secondary me-2" 
+                                onClick={() => alert('Por seguridad, no puedes editar los datos de otro Administrador.')}
+                                title="No tienes permisos para editar a este usuario"
+                              >
+                                <i className="bi bi-lock-fill" />
+                              </button>
+                            ) : (
+                              <button 
+                                className="btn btn-sm btn-success me-2" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#userModal" 
+                                onClick={() => abrirModalUsuario(u)}
+                              >
+                                <i className="bi bi-pencil-square" />
+                              </button>
+                            )}
+                            
                             <button className="btn btn-sm btn-danger" onClick={() => eliminarUsuario(u.id)}><i className="bi bi-trash" /></button>
                           </td>
                         </tr>
@@ -716,7 +673,9 @@ function Admin() {
                             {p.imagenUrl ? (
                               <img src={`${BASE_URL}${p.imagenUrl}`} alt={p.nombre} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} />
                             ) : (
-                              <span className="text-muted">Sin imagen</span>
+                              <div className="d-flex align-items-center justify-content-center bg-light rounded text-secondary" style={{width: '50px', height: '50px'}}>
+                                <i className="bi bi-bag fs-4"></i>
+                              </div>
                             )}
                           </td>
                           <td>{p.codigoProducto}</td>
@@ -747,7 +706,6 @@ function Admin() {
             </>
           )}
 
-          {/* Panel Pedidos */}
           {seccion === 'pedidos' && (
             <>
               <div className="row g-4 align-items-center mb-3">
@@ -808,7 +766,6 @@ function Admin() {
             </>
           )}
 
-          {/* Panel Marcas */}
           {seccion === 'marcas' && (
             <>
               <div className="row g-4 align-items-center mb-3">
@@ -867,10 +824,9 @@ function Admin() {
             </>
           )}
 
-          {/* Panel Categorías */}
           {seccion === 'categorias' && (
             <>
-              <div className="row g-4 align-items-center mb-3">
+               <div className="row g-4 align-items-center mb-3">
                 <div className="col-md-3">
                   <div className="stats-card text-center p-4 rounded border-0 text-white" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
                     <h3 className="mb-1 fw-bold">{loading ? '—' : categories.length}</h3>
@@ -918,7 +874,6 @@ function Admin() {
             </>
           )}
 
-          {/* Panel Mensajes */}
           {seccion === 'mensajes' && (
             <>
               <div className="row g-4 align-items-center mb-3">
@@ -979,7 +934,7 @@ function Admin() {
           )}
         </div>
 
-        {/* Modales de usuario y producto (solo presentación, no funcionales) */}
+        {/* Modales de usuario y producto */}
         <div className="modal fade" id="userModal" tabIndex={-1} aria-hidden="true">
           <div className="modal-dialog">
             <div className="modal-content">
@@ -1010,7 +965,6 @@ function Admin() {
                   if (rut.value) rut.value = formatearRut(rut.value);
                   if (!validarRut(rut.value)) { setFieldError(rut, rutErr, 'RUT inválido'); ok = false; } else { setFieldError(rut, rutErr, ''); }
                   if (!validarEmail(email.value)) { setFieldError(email, emailErr, 'Correo inválido'); ok = false; } else { setFieldError(email, emailErr, ''); }
-                  // Si es edición y no hay password, es válido (mantener actual)
                   if (!editandoUsuario && (!pass.value || pass.value.length < 8)) { setFieldError(pass, passErr, 'Mínimo 8 caracteres'); ok = false; } else if (pass.value && pass.value.length < 8) { setFieldError(pass, passErr, 'Mínimo 8 caracteres'); ok = false; } else { setFieldError(pass, passErr, ''); }
                   if (!ok) return;
                   
@@ -1023,11 +977,9 @@ function Admin() {
                       rol: rol.value,
                       activo: true
                     };
-                    // Solo incluir password si se ingresó uno nuevo
                     if (pass.value) {
                       datosUsuario.passwordHash = pass.value;
                     }
-                    
                     if (editandoUsuario) {
                       await Api.updateUser(editandoUsuario.id, datosUsuario);
                     } else {
@@ -1042,8 +994,6 @@ function Admin() {
                     }
                   } catch (err) {
                     const errorMsg = err.response?.data || 'Error al guardar usuario';
-                    console.log('ERROR:', errorMsg, 'TIENE RUT?', errorMsg.toUpperCase().includes('RUT'));
-                    // Mostrar error en el campo correcto según el mensaje
                     if (errorMsg.toUpperCase().includes('RUT')) {
                       setFieldError(rut, rutErr, errorMsg);
                     } else if (errorMsg.toLowerCase().includes('correo') || errorMsg.toLowerCase().includes('email')) {
@@ -1133,7 +1083,6 @@ function Admin() {
                   if (!categoriaId.value) { setFieldError(categoriaId, categoriaErr, 'Seleccione una categoría'); ok = false; } else { setFieldError(categoriaId, categoriaErr, ''); }
                   if (!marcaId.value) { setFieldError(marcaId, marcaErr, 'Seleccione una marca'); ok = false; } else { setFieldError(marcaId, marcaErr, ''); }
                   
-                  // Validar que precio sea un número entero sin decimales
                   if (!precio.value.trim()) { setFieldError(precio, precioErr, 'Ingrese el precio'); ok = false; }
                   else if (!/^\d+$/.test(precio.value.trim())) { setFieldError(precio, precioErr, 'El precio debe ser un número entero sin decimales'); ok = false; }
                   else {
@@ -1142,7 +1091,6 @@ function Admin() {
                     else { setFieldError(precio, precioErr, ''); }
                   }
                   
-                  // Validar que stock sea un número entero sin puntos ni comas
                   if (!stock.value.trim()) { setFieldError(stock, stockErr, 'Ingrese el stock'); ok = false; }
                   else if (!/^\d+$/.test(stock.value.trim())) { setFieldError(stock, stockErr, 'El stock debe ser un número entero sin puntos ni comas'); ok = false; }
                   else {
@@ -1151,12 +1099,7 @@ function Admin() {
                     else { setFieldError(stock, stockErr, ''); }
                   }
                   
-                  // Validar imagen: obligatoria al crear, opcional al editar
-                  if (!editandoProducto && !imagen.files[0]) {
-                    setFieldError(imagen, imagenErr, 'Debe seleccionar una imagen para el producto');
-                    ok = false;
-                  } else if (imagen.files[0]) {
-                    // Validar que sea una imagen real
+                  if (imagen.files[0]) {
                     const archivo = imagen.files[0];
                     const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
                     const tamañoMaximo = 5 * 1024 * 1024; // 5MB
@@ -1176,7 +1119,6 @@ function Admin() {
                   
                   if (!ok) return;
                   
-                  // Definir valores numéricos después de todas las validaciones
                   const precioVal = Number(precio.value);
                   const stockVal = Number(stock.value);
                   
@@ -1210,10 +1152,7 @@ function Admin() {
                     }
                   } catch (err) {
                     console.error('Error al guardar producto:', err);
-                    
                     let errorMsg = 'Error al guardar producto';
-                    
-                    // Extraer mensaje del backend
                     if (err.response?.data) {
                       if (typeof err.response.data === 'string') {
                         errorMsg = err.response.data;
@@ -1223,8 +1162,6 @@ function Admin() {
                         errorMsg = err.response.data.error;
                       }
                     }
-                    
-                    // Si es error 403, es código duplicado
                     if (err.response?.status === 403) {
                       setFieldError(codigo, codigoErr, 'El código de producto ya existe');
                     } else {
@@ -1274,7 +1211,6 @@ function Admin() {
                       className="form-control" 
                       placeholder="ej: 15990"
                       onInput={(e) => {
-                        // Solo permitir números enteros (sin puntos, comas, ni signos)
                         e.target.value = e.target.value.replace(/[^0-9]/g, '');
                       }}
                     />
@@ -1288,14 +1224,13 @@ function Admin() {
                       className="form-control" 
                       defaultValue="0" 
                       onInput={(e) => {
-                        // Solo permitir números enteros (sin puntos, comas, ni signos)
                         e.target.value = e.target.value.replace(/[^0-9]/g, '');
                       }}
                     />
                     <div id="productStockError" className="error-message text-danger small" style={{display:'none'}} />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="productImagen" className="form-label">Imagen {editandoProducto ? <small className="text-muted">(opcional - dejar vacío para mantener actual)</small> : '*'}</label>
+                    <label htmlFor="productImagen" className="form-label">Imagen <small className="text-muted">(opcional)</small></label>
                     <input id="productImagen" type="file" className="form-control" accept="image/*" />
                     <div id="productImagenError" className="error-message text-danger small" style={{display:'none'}} />
                     <small className="text-muted">Formatos: JPG, PNG, GIF, WEBP, AVIF (máx 5MB)</small>
@@ -1311,7 +1246,6 @@ function Admin() {
           </div>
         </div>
 
-        {/* Modal Detalle Producto */}
         <div className="modal fade" id="productoDetalleModal" tabIndex={-1} aria-hidden="true">
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
@@ -1323,12 +1257,20 @@ function Admin() {
                 {productoDetalle && (
                   <div className="row">
                     <div className="col-md-4">
-                      <img 
-                        src={`${BASE_URL}${productoDetalle.imagenUrl}`} 
-                        alt={productoDetalle.nombre} 
-                        className="img-fluid rounded mb-3"
-                        style={{maxHeight: '300px', objectFit: 'contain'}}
-                      />
+                      {/* === PLACEHOLDER BOLSITA EN MODAL === */}
+                      {productoDetalle.imagenUrl ? (
+                        <img 
+                          src={`${BASE_URL}${productoDetalle.imagenUrl}`} 
+                          alt={productoDetalle.nombre} 
+                          className="img-fluid rounded mb-3"
+                          style={{maxHeight: '300px', objectFit: 'contain'}}
+                        />
+                      ) : (
+                        <div className="d-flex align-items-center justify-content-center bg-light text-secondary rounded mb-3" style={{ height: '300px', width: '100%' }}>
+                          <i className="bi bi-bag display-1"></i>
+                        </div>
+                      )}
+                      {/* =================================== */}
                     </div>
                     <div className="col-md-8">
                       <h4 className="mb-3">{productoDetalle.nombre}</h4>
@@ -1369,7 +1311,6 @@ function Admin() {
           </div>
         </div>
 
-        {/* Modal Detalle Pedido */}
         <div className="modal fade" id="pedidoDetalleModal" tabIndex={-1} aria-hidden="true">
           <div className="modal-dialog modal-xl">
             <div className="modal-content">
@@ -1486,7 +1427,6 @@ function Admin() {
           </div>
         </div>
 
-        {/* Modal Info Envío */}
         <div className="modal fade" id="infoEnvioModal" tabIndex={-1} aria-hidden="true">
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
@@ -1497,7 +1437,6 @@ function Admin() {
               <div className="modal-body">
                 {infoEnvioDetalle && infoEnvioDetalle.datosTransaccion ? (
                   <>
-                    {/* Tipo de Entrega */}
                     <div className="mb-4">
                       <h6 className="fw-bold mb-3 text-primary">
                         <i className="bi bi-box-seam me-2"></i>Tipo de Entrega
@@ -1508,8 +1447,6 @@ function Admin() {
                         </span>
                       </div>
                     </div>
-
-                    {/* Contacto */}
                     <div className="mb-4">
                       <h6 className="fw-bold mb-3 text-primary">
                         <i className="bi bi-person-fill me-2"></i>Datos de Contacto
@@ -1526,8 +1463,6 @@ function Admin() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Dirección de Entrega (Solo si es DESPACHO) */}
                     {infoEnvioDetalle.datosTransaccion.tipoEntrega === 'DESPACHO' && (
                       <div className="mb-4">
                         <h6 className="fw-bold mb-3 text-primary">
@@ -1540,8 +1475,6 @@ function Admin() {
                         </div>
                       </div>
                     )}
-
-                    {/* Información de Pago */}
                     <div className="mb-3">
                       <h6 className="fw-bold mb-3 text-primary">
                         <i className="bi bi-credit-card me-2"></i>Información de Pago
@@ -1573,7 +1506,6 @@ function Admin() {
           </div>
         </div>
 
-        {/* Modal Marca */}
         <div className="modal fade" id="marcaModal" tabIndex={-1} aria-hidden="true">
           <div className="modal-dialog">
             <div className="modal-content">
@@ -1599,7 +1531,6 @@ function Admin() {
                     setFieldError(nombre, nombreErr, '');
                   }
                   
-                  // Validar imagen obligatoria solo al crear nueva marca
                   if (!editandoMarca && !imagen.files[0]) {
                     setFieldError(imagen, imagenErr, 'Debe seleccionar una imagen para la marca');
                     return;
@@ -1613,13 +1544,11 @@ function Admin() {
                     if (imagen.files[0]) {
                       formData.append('imagen', imagen.files[0]);
                     }
-                    
                     if (editandoMarca) {
                       await Api.updateBrand(editandoMarca.id, formData);
                     } else {
                       await Api.createBrand(formData);
                     }
-                    
                     const b = await Api.brands();
                     setBrands(b);
                     form.reset();
@@ -1654,7 +1583,6 @@ function Admin() {
           </div>
         </div>
 
-        {/* Modal Categoría */}
         <div className="modal fade" id="categoriaModal" tabIndex={-1} aria-hidden="true">
           <div className="modal-dialog">
             <div className="modal-content">
@@ -1680,13 +1608,11 @@ function Admin() {
                   
                   try {
                     const categoriaData = { nombre: nombre.value.trim() };
-                    
                     if (editandoCategoria) {
                       await Api.updateCategory(editandoCategoria.id, categoriaData);
                     } else {
                       await Api.createCategory(categoriaData);
                     }
-                    
                     const c = await Api.categories();
                     setCategories(c);
                     form.reset();
@@ -1715,7 +1641,6 @@ function Admin() {
           </div>
         </div>
 
-        {/* Modal Detalle Cotización */}
         <div className="modal fade" id="cotizacionDetalleModal" tabIndex={-1} aria-hidden="true">
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
@@ -1765,7 +1690,6 @@ function Admin() {
           </div>
         </div>
 
-        {/* Modal Detalle Mensaje */}
         <div className="modal fade" id="mensajeDetalleModal" tabIndex={-1} aria-hidden="true">
           <div className="modal-dialog modal-lg">
             <div className="modal-content">

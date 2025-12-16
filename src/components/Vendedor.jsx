@@ -67,7 +67,7 @@ function Vendedor() {
   };
 
   const getImageUrl = (imagenUrl) => {
-    if (!imagenUrl) return '/placeholder.png';
+    if (!imagenUrl) return '';
     if (imagenUrl.startsWith('http')) return imagenUrl;
     const BASE_URL = '';
     return `${BASE_URL}${imagenUrl}`;
@@ -144,11 +144,15 @@ function Vendedor() {
                         <tr key={producto.id}>
                           <td>{producto.id}</td>
                           <td>
+                            {/* === PLACEHOLDER BOLSITA EN TABLA === */}
                             {producto.imagenUrl ? (
                               <img src={getImageUrl(producto.imagenUrl)} alt={producto.nombre} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} />
                             ) : (
-                              <span className="text-muted">Sin imagen</span>
+                              <div className="d-flex align-items-center justify-content-center bg-light rounded text-secondary" style={{width: '50px', height: '50px'}}>
+                                <i className="bi bi-bag fs-4"></i>
+                              </div>
                             )}
+                            {/* ==================================== */}
                           </td>
                           <td>{producto.codigoProducto}</td>
                           <td>{producto.nombre}</td>
@@ -251,12 +255,20 @@ function Vendedor() {
               {productoDetalle && (
                 <div className="row">
                   <div className="col-md-4">
-                    <img 
-                      src={getImageUrl(productoDetalle.imagenUrl)} 
-                      alt={productoDetalle.nombre} 
-                      className="img-fluid rounded mb-3"
-                      style={{maxHeight: '300px', objectFit: 'contain'}}
-                    />
+                    {/* === PLACEHOLDER BOLSITA EN MODAL === */}
+                    {productoDetalle.imagenUrl ? (
+                      <img 
+                        src={getImageUrl(productoDetalle.imagenUrl)} 
+                        alt={productoDetalle.nombre} 
+                        className="img-fluid rounded mb-3"
+                        style={{maxHeight: '300px', objectFit: 'contain'}}
+                      />
+                    ) : (
+                      <div className="d-flex align-items-center justify-content-center bg-light text-secondary rounded mb-3" style={{ height: '300px', width: '100%' }}>
+                        <i className="bi bi-bag display-1"></i>
+                      </div>
+                    )}
+                    {/* =================================== */}
                   </div>
                   <div className="col-md-8">
                     <h4 className="mb-3">{productoDetalle.nombre}</h4>

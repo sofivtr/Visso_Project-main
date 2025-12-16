@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom'; // Importamos esto para leer la URL
+import { useSearchParams } from 'react-router-dom'; 
 import { Api } from '../assets/js/api';
 import { getImageUrl } from '../assets/js/imageUtils';
 import { getCurrentUser } from '../assets/js/session';
@@ -31,7 +31,6 @@ function Productos() {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Hook para leer parámetros de la URL (?marca=RayBan o ?categoria=Sol)
   const [searchParams] = useSearchParams();
 
   const [category, setCategory] = useState('todos');
@@ -66,7 +65,6 @@ function Productos() {
           setCategories(Array.isArray(categoriesData) ? categoriesData : []);
           setBrands(Array.isArray(brandsData) ? brandsData : []);
 
-          // === LÓGICA DE FILTRADO AUTOMÁTICO DESDE URL ===
           const urlCategory = searchParams.get('categoria');
           const urlBrand = searchParams.get('marca');
 
@@ -89,7 +87,7 @@ function Productos() {
       }
     })();
     return () => { mounted = false; };
-  }, [searchParams]); // Agregamos searchParams como dependencia
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -156,6 +154,16 @@ function Productos() {
       if (showCotizacion) {
         if (!cotizacionData.nombrePaciente || !cotizacionData.fechaReceta) {
           alert('Por favor complete el nombre del paciente y la fecha de la receta');
+          return;
+        }
+
+        // Validación de fecha (máximo 2 años de antigüedad)
+        const fechaRecetaDate = new Date(`${cotizacionData.fechaReceta}T00:00:00`);
+        const fechaLimite = new Date();
+        fechaLimite.setFullYear(fechaLimite.getFullYear() - 2);
+
+        if (fechaRecetaDate < fechaLimite) {
+          alert('La receta no puede tener más de 2 años de antigüedad.');
           return;
         }
 
@@ -283,7 +291,17 @@ function Productos() {
           {!loading && filtered.map((p) => (
             <div className="col-sm-6 col-md-4 col-lg-3 mb-4" key={p.id}>
               <div className="card h-100 shadow-sm">
-                <img src={getImageUrl(p.imagenUrl)} className="card-img-top" alt={p.nombre} style={{ objectFit: 'contain', height: 180 }} />
+                
+                {/* === PLACEHOLDER BOLSITA EN TARJETA (GRID) === */}
+                {p.imagenUrl ? (
+                  <img src={getImageUrl(p.imagenUrl)} className="card-img-top" alt={p.nombre} style={{ objectFit: 'contain', height: 180 }} />
+                ) : (
+                  <div className="d-flex align-items-center justify-content-center bg-light text-secondary" style={{ height: 180, width: '100%' }}>
+                    <i className="bi bi-bag fs-1"></i>
+                  </div>
+                )}
+                {/* ============================================== */}
+
                 <div className="card-body d-flex flex-column">
                   <span className="badge bg-light text-dark align-self-start mb-2">{p.categoria?.nombre || 'Sin categoría'}</span>
                   <h5 className="card-title mb-1">{p.nombre}</h5>
@@ -317,13 +335,23 @@ function Productos() {
               <div className="row g-4 mb-4">
                 <div className="col-md-4">
                   <div className="product-gallery">
-                    <img
-                      id="modalImage"
-                      src={selected ? getImageUrl(selected.imagenUrl) : ''}
-                      alt={selected ? selected.nombre : 'Producto'}
-                      className="img-fluid rounded"
-                      style={{ maxHeight: '300px', objectFit: 'contain' }}
-                    />
+                    
+                    {/* === PLACEHOLDER BOLSITA EN MODAL === */}
+                    {selected && selected.imagenUrl ? (
+                       <img
+                        id="modalImage"
+                        src={getImageUrl(selected.imagenUrl)}
+                        alt={selected.nombre}
+                        className="img-fluid rounded"
+                        style={{ maxHeight: '300px', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <div className="d-flex align-items-center justify-content-center bg-light text-secondary rounded" style={{ height: '300px', width: '100%' }}>
+                        <i className="bi bi-bag display-1"></i>
+                      </div>
+                    )}
+                    {/* =================================== */}
+
                   </div>
                 </div>
                 <div className="col-md-8">
@@ -403,6 +431,7 @@ function Productos() {
                             className="form-control"
                             value={cotizacionData.gradoOd}
                             onChange={(e) => setCotizacionData({...cotizacionData, gradoOd: e.target.value})}
+                            onKeyDown={(e) => e.preventDefault()}
                             placeholder="Ej: -2.00"
                           />
                         </div>
@@ -415,6 +444,7 @@ function Productos() {
                             className="form-control"
                             value={cotizacionData.gradoOi}
                             onChange={(e) => setCotizacionData({...cotizacionData, gradoOi: e.target.value})}
+                            onKeyDown={(e) => e.preventDefault()}
                             placeholder="Ej: -1.75"
                           />
                         </div>

@@ -39,11 +39,10 @@ function Carrito() {
       }
     };
     cargarRegiones();
-  }, []); // Solo ejecutar una vez al montar
+  }, []); 
 
   useEffect(() => {
     if (usuario && !yaPreLlenado) {
-      // Solo pre-llenar una vez al cargar el componente
       setFormPago(prev => ({
         ...prev,
         nombreContacto: usuario.nombre && usuario.apellido ? `${usuario.nombre} ${usuario.apellido}` : usuario.nombre || '',
@@ -51,7 +50,7 @@ function Carrito() {
       }));
       setYaPreLlenado(true);
     }
-  }, [usuario, yaPreLlenado]); // Solo cuando cambia el usuario y no se ha pre-llenado
+  }, [usuario, yaPreLlenado]); 
 
   // Cargar carrito desde el backend
   useEffect(() => {
@@ -96,10 +95,8 @@ function Carrito() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Para teléfono, formatear automáticamente usando función de validaciones.js
     if (name === 'telefono') {
       const telefonoLimpio = value.replace(/[^0-9]/g, '');
-      // Formatear si empieza con 9 y tiene suficientes dígitos
       const telefonoFormateado = telefonoLimpio.startsWith('9') && telefonoLimpio.length >= 5 
         ? formatearTelefonoChile(telefonoLimpio)
         : telefonoLimpio;
@@ -111,11 +108,9 @@ function Carrito() {
       return;
     }
     
-    // Para número de tarjeta, solo números y espacios, máximo 19 caracteres
     if (name === 'numeroTarjeta') {
       const numeroLimpio = value.replace(/[^0-9]/g, '');
       if (numeroLimpio.length <= 16) {
-        // Formatear con espacios cada 4 dígitos
         const numeroFormateado = numeroLimpio.match(/.{1,4}/g)?.join(' ') || numeroLimpio;
         setFormPago(prev => ({
           ...prev,
@@ -135,7 +130,6 @@ function Carrito() {
     setFormPago(prev => ({
       ...prev,
       tipoEntrega: tipo,
-      // Limpiar campos de dirección si se elige RETIRO
       ...(tipo === 'RETIRO' ? {
         region: '',
         comuna: '',
@@ -145,7 +139,6 @@ function Carrito() {
   };
 
   const validarFormulario = () => {
-    // Obtener referencias de los campos
     const nombreInput = document.querySelector('[name="nombreContacto"]');
     const emailInput = document.querySelector('[name="email"]');
     const telefonoInput = document.querySelector('[name="telefono"]');
@@ -154,7 +147,6 @@ function Carrito() {
     const direccionInput = document.querySelector('[name="direccion"]');
     const numeroTarjetaInput = document.querySelector('[name="numeroTarjeta"]');
 
-    // Obtener referencias de los mensajes de error
     const nombreError = document.getElementById('nombreContactoError');
     const emailError = document.getElementById('emailError');
     const telefonoError = document.getElementById('telefonoError');
@@ -165,7 +157,6 @@ function Carrito() {
 
     let ok = true;
 
-    // Limpiar errores previos
     setFieldError(nombreInput, nombreError, '');
     setFieldError(emailInput, emailError, '');
     setFieldError(telefonoInput, telefonoError, '');
@@ -174,7 +165,6 @@ function Carrito() {
     setFieldError(direccionInput, direccionError, '');
     setFieldError(numeroTarjetaInput, numeroTarjetaError, '');
 
-    // Validar nombre
     if (!formPago.nombreContacto.trim()) {
       setFieldError(nombreInput, nombreError, 'Por favor ingresa tu nombre completo');
       ok = false;
@@ -183,7 +173,6 @@ function Carrito() {
       ok = false;
     }
 
-    // Validar email
     if (!formPago.email.trim()) {
       setFieldError(emailInput, emailError, 'Por favor ingresa tu email');
       ok = false;
@@ -192,7 +181,6 @@ function Carrito() {
       ok = false;
     }
 
-    // Validar teléfono
     if (!formPago.telefono.trim()) {
       setFieldError(telefonoInput, telefonoError, 'Por favor ingresa tu teléfono');
       ok = false;
@@ -201,7 +189,6 @@ function Carrito() {
       ok = false;
     }
 
-    // Validar dirección si es DESPACHO
     if (formPago.tipoEntrega === 'DESPACHO') {
       if (!formPago.region) {
         setFieldError(regionSelect, regionError, 'Por favor selecciona una región');
@@ -220,7 +207,6 @@ function Carrito() {
       }
     }
 
-    // Validar número de tarjeta
     if (!formPago.numeroTarjeta.trim()) {
       setFieldError(numeroTarjetaInput, numeroTarjetaError, 'Por favor ingresa el número de tarjeta');
       ok = false;
@@ -258,7 +244,6 @@ function Carrito() {
       await Api.cerrarCarrito(usuario.id, datosTransaccion);
       clearCart();
 
-      // Guardar datos en sessionStorage para la página de resultado
       const pedidoCompleto = {
         usuario: {
           rut: usuario.rut,
@@ -277,7 +262,6 @@ function Carrito() {
       };
       sessionStorage.setItem('ultimo_pedido', JSON.stringify(pedidoCompleto));
 
-      // Cerrar el modal correctamente y remover el backdrop
       const modalEl = document.getElementById('checkoutModal');
       const modal = window.bootstrap?.Modal?.getInstance(modalEl);
       
@@ -285,7 +269,6 @@ function Carrito() {
         modal.hide();
       }
       
-      // Remover manualmente el backdrop y clases del body
       const backdrop = document.querySelector('.modal-backdrop');
       if (backdrop) {
         backdrop.remove();
@@ -294,7 +277,6 @@ function Carrito() {
       document.body.style.removeProperty('overflow');
       document.body.style.removeProperty('padding-right');
 
-      // Navegar después de un pequeño delay para asegurar que el modal se cerró
       setTimeout(() => {
         navigate('/resultado-compra?estado=ok');
       }, 100);
@@ -302,7 +284,6 @@ function Carrito() {
       console.error('Error al finalizar compra:', error);
       alert('❌ Error al procesar la compra: ' + (error.response?.data?.mensaje || error.message));
       
-      // En caso de error, también limpiar el modal
       const backdrop = document.querySelector('.modal-backdrop');
       if (backdrop) {
         backdrop.remove();
@@ -318,11 +299,9 @@ function Carrito() {
   const eliminarItem = async (detalleId) => {
     try {
       await Api.removeFromCarrito(detalleId);
-      // Recargar carrito desde backend
       const nuevoCarrito = await Api.getCarrito(usuario.id);
       setCarrito(nuevoCarrito);
       
-      // Actualizar localStorage para sincronizar el contador
       const itemsLS = (nuevoCarrito?.detalles || []).map(item => ({
         id: item.producto?.id || item.id,
         nombre: item.nombreProducto,
@@ -343,11 +322,9 @@ function Carrito() {
     
     try {
       await Api.updateCarritoItem(detalleId, nuevaCantidad);
-      // Recargar carrito desde backend
       const nuevoCarrito = await Api.getCarrito(usuario.id);
       setCarrito(nuevoCarrito);
       
-      // Actualizar localStorage para sincronizar el contador
       const itemsLS = (nuevoCarrito?.detalles || []).map(item => ({
         id: item.producto?.id || item.id,
         nombre: item.nombreProducto,
@@ -362,7 +339,6 @@ function Carrito() {
       const mensaje = error.response?.data?.message || error.message;
       if (error.response?.status === 400 && (mensaje.toLowerCase().includes('stock') || mensaje.toLowerCase().includes('disponible'))) {
         alert(mensaje);
-        // Recargar carrito para mostrar cantidad correcta
         const nuevoCarrito = await Api.getCarrito(usuario.id);
         setCarrito(nuevoCarrito);
       } else {
@@ -370,8 +346,6 @@ function Carrito() {
       }
     }
   };
-
-
 
   if (!usuario) {
     return (
@@ -435,17 +409,24 @@ function Carrito() {
                         <div key={item.id} className="cart-item border-bottom pb-3 mb-3">
                           <div className="row align-items-center">
                             <div className="col-md-2">
-                              <img
-                                src={getImageUrl(producto?.imagenUrl)}
-                                alt={item.nombreProducto}
-                                className="img-fluid rounded"
-                              />
+                              {/* === PLACEHOLDER BOLSITA EN CARRITO === */}
+                              {producto?.imagenUrl ? (
+                                <img
+                                  src={getImageUrl(producto?.imagenUrl)}
+                                  alt={item.nombreProducto}
+                                  className="img-fluid rounded"
+                                />
+                              ) : (
+                                <div className="d-flex align-items-center justify-content-center bg-light rounded text-secondary" style={{ height: '80px', width: '100%', minWidth: '80px' }}>
+                                  <i className="bi bi-bag fs-1"></i>
+                                </div>
+                              )}
+                              {/* ===================================== */}
                             </div>
                             <div className="col-md-4">
                               <h5 className="mb-1">{item.nombreProducto}</h5>
                               <small className="text-muted">{producto?.categoria?.nombre || ''}</small>
                               
-                              {/* Mostrar información de cotización */}
                               {item.cotizacion && (
                                 <div className="mt-2 p-2 bg-light rounded">
                                   <small className="d-block fw-bold text-primary">
