@@ -168,11 +168,17 @@ export default function ResultadoCompra() {
                           return (
                             <tr key={idx}>
                               <td>
-                                <img 
-                                  src={getImageUrl(item.producto?.imagenUrl || '')} 
-                                  alt={item.nombreProducto} 
-                                  style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }} 
-                                />
+                                {item.producto?.imagenUrl ? (
+                                  <img
+                                    src={getImageUrl(item.producto.imagenUrl)}
+                                    alt={item.nombreProducto}
+                                    style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }}
+                                  />
+                                ) : (
+                                  <div className="d-flex align-items-center justify-content-center bg-light text-secondary" style={{ width: 50, height: 50, borderRadius: 8 }}>
+                                    <i className="bi bi-bag fs-3"></i>
+                                  </div>
+                                )}
                               </td>
                               <td>{item.nombreProducto}</td>
                               <td className="text-end">{formatCLP(precio)}</td>

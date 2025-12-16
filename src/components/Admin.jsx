@@ -140,7 +140,7 @@ function Admin() {
       console.error('Error al eliminar producto:', err);
       // === MEJORA EN MENSAJE DE ERROR ===
       if (err.response?.status === 403 || err.response?.status === 400) {
-        alert('NO SE PUEDE ELIMINAR: Este producto forma parte del historial de ventas (pedidos o carritos). Para que no aparezca en la tienda, simplemente déjelo con Stock 0.');
+        alert('No se puede eliminar el producto porque forma parte del historial de ventas.');
       } else {
         alert('Error al eliminar producto: ' + (err.response?.data?.message || err.message));
       }

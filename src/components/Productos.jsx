@@ -157,13 +157,19 @@ function Productos() {
           return;
         }
 
-        // Validación de fecha (máximo 2 años de antigüedad)
+        // Validación de fecha (máximo 2 años de antigüedad y no futura)
         const fechaRecetaDate = new Date(`${cotizacionData.fechaReceta}T00:00:00`);
         const fechaLimite = new Date();
         fechaLimite.setFullYear(fechaLimite.getFullYear() - 2);
+        const hoy = new Date();
+        hoy.setHours(0,0,0,0);
 
         if (fechaRecetaDate < fechaLimite) {
           alert('La receta no puede tener más de 2 años de antigüedad.');
+          return;
+        }
+        if (fechaRecetaDate > hoy) {
+          alert('La fecha de la receta no puede ser futura.');
           return;
         }
 
